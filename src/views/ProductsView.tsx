@@ -6,7 +6,11 @@ import { ProductCard } from '../components/ProductCard'; // Asegúrate de ajusta
 const getApiUrl = () => {
   try { return import.meta.env.VITE_API_URL; } catch (error) { return null; }
 };
+const getBusinessId = () => {
+  try { return import.meta.env.VITE_BUSINESS_ID; } catch (error) { return null; }
+};
 const API_URL = getApiUrl() || 'http://localhost:3000';
+const BUSINESS_ID = getBusinessId() || '3'; // Valor por defecto si no está configurado
 
 // Tipos para la respuesta de la API
 interface ApiProduct {
@@ -41,7 +45,7 @@ export function ProductsView() {
 
   // 1. OBTENER DATOS DEL BACKEND REAL
   useEffect(() => {
-    fetch(`${API_URL}/catalog/products`)
+    fetch(`${API_URL}/catalog/business/${BUSINESS_ID}/products`)
       .then(res => res.json())
       .then((data: ApiProduct[]) => {
         const formattedProducts = data.map(p => ({

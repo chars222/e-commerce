@@ -6,7 +6,12 @@ import { useState, useEffect } from 'react';
 const getApiUrl = () => {
   try { return import.meta.env.VITE_API_URL; } catch (error) { return null; }
 };
+
+const getBusinessId = () => {
+  try { return import.meta.env.VITE_BUSINESS_ID; } catch (error) { return null; }
+};
 const API_URL = getApiUrl() || 'http://localhost:3000';
+const BUSINESS_ID = getBusinessId() || '3'; // Valor por defecto si no está configurado
 
 export const HomeView = () => {
   const navigate = useNavigate();
@@ -15,7 +20,7 @@ export const HomeView = () => {
 
   // 1. OBTENER LOS DATOS REALES DEL CATÁLOGO
   useEffect(() => {
-    fetch(`${API_URL}/catalog/products`)
+    fetch(`${API_URL}/catalog/business/${BUSINESS_ID}/products`)
       .then(res => res.json())
       .then(data => {
         // Formateamos los datos igual que en ProductsView, y añadimos la lógica de descuentos

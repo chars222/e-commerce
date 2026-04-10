@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { Image as ImageIcon, X, Trash2, UploadCloud, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, X, Trash2, UploadCloud, Loader2, AlignLeft } from 'lucide-react';
 
 interface Product {
   id: number;
   name: string;
   price: number;
+  description?: string;
   imageUrl?: string;
   category?: { name: string };
   gallery?: string[];
@@ -20,9 +21,10 @@ interface ImageManagerModalProps {
 const getApiUrl = () => {
   try { return import.meta.env.VITE_API_URL; } catch (error) { return null; }
 };
-const API_URL = getApiUrl() || 'http://192.168.0.9:3000';
+const API_URL = getApiUrl() || 'http://localhost:3000';
 
 export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageManagerModalProps) => {
+  const [description, setDescription] = useState(product.description || '');
   const [imageUrl, setImageUrl] = useState(product.imageUrl || '');
   const [gallery, setGallery] = useState(product.gallery || []);
   const [saving, setSaving] = useState(false);
@@ -35,7 +37,7 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
   const coverInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  // --- FUNCIÓN CENTRAL PARA SUBIR ARCHIVOS AL BACKEND ---
+  // --- FUNCIÓN CENTRAL PARA SUBIR ARCHIVOS AL BACKEND (CORREGIDA) ---
   const uploadFileToServer = async (file: File): Promise<string | null> => {
     const formData = new FormData();
     formData.append('image', file);
@@ -48,7 +50,18 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
         body: formData 
       });
 
-      const data = await res.json();
+      // 1. CORRECCIÓN: Leemos la respuesta como texto primero para que no colapse si el servidor envía un error HTML o vacío
+      const responseText = await res.text();
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("El servidor NO devolvió JSON. Esta fue la respuesta real:", responseText);
+        alert(`Error del servidor (${res.status}). Por favor revisa la consola (F12) para ver el motivo.`);
+        return null;
+      }
+
       if (res.ok) {
         // Concatenamos la URL del backend con la ruta de la imagen
         return `${API_URL}${data.url}`;
@@ -57,7 +70,7 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
         return null;
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error de conexión:", error);
       alert('Error de conexión al subir el archivo');
       return null;
     }
@@ -96,13 +109,14 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
       setGallery(gallery.filter((_, i) => i !== index));
   };
 
+  // --- FUNCIÓN GUARDAR (CORREGIDA): Envía description, imageUrl y gallery ---
   const handleSave = async () => {
     setSaving(true);
     try {
       const res = await fetch(`${API_URL}/products/${product.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ imageUrl, gallery })
+        body: JSON.stringify({ imageUrl, gallery, description })
       });
       if (res.ok) {
           onRefresh();
@@ -121,9 +135,9 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
       <div className="bg-white w-full max-w-2xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
             <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Editando Visuales</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detalles Web & Visuales</p>
                 <h3 className="text-lg font-black text-slate-900 leading-none mt-1">{product.name}</h3>
             </div>
             <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-900 transition-colors"><X size={24}/></button>
@@ -131,10 +145,24 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
 
         <div className="p-8 overflow-y-auto flex-1 space-y-10">
             
-            {/* PORTADA */}
+            {/* DESCRIPCIÓN DEL PRODUCTO */}
             <div>
-                <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-4 flex items-center gap-2"><ImageIcon size={18}/> 1. Portada (Principal)</h4>
-                <p className="text-xs text-slate-500 mb-4">Esta es la imagen principal que aparece en el catálogo web y en el POS.</p>
+                <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-4 flex items-center gap-2"><AlignLeft size={18}/> 1. Descripción Comercial</h4>
+                <p className="text-xs text-slate-500 mb-4">Esta descripción aparecerá en la página web del catálogo para tus clientes.</p>
+                
+                <textarea 
+                    value={description} 
+                    onChange={(e) => setDescription(e.target.value)} 
+                    placeholder="Ej. Polera de algodón pima peruano, corte oversize..." 
+                    rows={4}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-slate-900 transition-colors resize-none"
+                ></textarea>
+            </div>
+
+            {/* PORTADA */}
+            <div className="border-t border-slate-100 pt-8">
+                <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-4 flex items-center gap-2"><ImageIcon size={18}/> 2. Portada (Principal)</h4>
+                <p className="text-xs text-slate-500 mb-4">Esta es la imagen principal que aparece en la grilla del catálogo web y en el POS.</p>
                 
                 <div className="flex gap-6">
                     <div className="w-32 h-40 bg-slate-100 rounded-xl overflow-hidden shrink-0 border border-slate-200 relative group">
@@ -177,7 +205,7 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
             <div className="border-t border-slate-100 pt-8">
                 <div className="flex justify-between items-center mb-4">
                     <div>
-                        <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2"><ImageIcon size={18}/> 2. Galería de Fotos</h4>
+                        <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 flex items-center gap-2"><ImageIcon size={18}/> 3. Galería de Fotos</h4>
                         <p className="text-xs text-slate-500 mt-1">Fotos secundarias (Ej: detalles de la tela, vista trasera).</p>
                     </div>
                     
@@ -186,7 +214,7 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
                     <button 
                         onClick={() => galleryInputRef.current?.click()}
                         disabled={uploadingGallery}
-                        className="bg-slate-900 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50"
+                        className="bg-slate-900 text-white text-xs font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 shrink-0"
                     >
                         {uploadingGallery ? <Loader2 size={14} className="animate-spin"/> : <UploadCloud size={14}/>}
                         {uploadingGallery ? 'Subiendo...' : 'Agregar Foto'}
@@ -214,7 +242,7 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
 
         </div>
 
-        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+        <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
             <button onClick={onClose} className="px-6 py-3 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-widest">Cancelar</button>
             <button onClick={handleSave} disabled={saving} className="bg-slate-900 text-white px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-colors disabled:opacity-50">
                 {saving ? 'Guardando...' : 'Guardar y Publicar'}
