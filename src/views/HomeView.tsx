@@ -7,11 +7,8 @@ const getApiUrl = () => {
   try { return import.meta.env.VITE_API_URL; } catch (error) { return null; }
 };
 
-const getBusinessId = () => {
-  try { return import.meta.env.VITE_BUSINESS_ID; } catch (error) { return null; }
-};
 const API_URL = getApiUrl() || 'http://localhost:3000';
-const BUSINESS_ID = getBusinessId() || '3'; // Valor por defecto si no está configurado
+const BUSINESS_ID = import.meta.env.VITE_BUSINESS_ID || '3';// Valor por defecto si no está configurado
 
 export const HomeView = () => {
   const navigate = useNavigate();
