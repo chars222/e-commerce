@@ -30,7 +30,7 @@ export const AdminDashboard = ({ token, onLogout }: AdminDashboardProps) => {
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${API_URL}/products`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) setProducts(await res.json());
+      if (res.ok) {setProducts(await res.json()); console.log("Error al cargar productos:", await res.json());}
     } catch (err) { 
       console.error(err); 
     } finally { 

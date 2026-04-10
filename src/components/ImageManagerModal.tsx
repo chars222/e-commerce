@@ -98,7 +98,6 @@ export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageM
 
   const handleSave = async () => {
     setSaving(true);
-    console.log(imageUrl, gallery);
     try {
       const res = await fetch(`${API_URL}/products/${product.id}`, {
         method: 'PUT',
