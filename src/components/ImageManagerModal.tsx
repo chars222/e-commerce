@@ -20,7 +20,7 @@ interface ImageManagerModalProps {
 const getApiUrl = () => {
   try { return import.meta.env.VITE_API_URL; } catch (error) { return null; }
 };
-const API_URL =  "api.centralmoda.store"// getApiUrl() || 'http://192.168.0.9:3000';
+const API_URL = getApiUrl() || 'http://192.168.0.9:3000';
 
 export const ImageManagerModal = ({ product, token, onClose, onRefresh }: ImageManagerModalProps) => {
   const [imageUrl, setImageUrl] = useState(product.imageUrl || '');
