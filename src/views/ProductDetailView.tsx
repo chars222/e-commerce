@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronRight, ShoppingBag } from 'lucide-react';
+import { ChevronRight, ShoppingBag, AlignLeft } from 'lucide-react';
 
 const getApiUrl = () => {
   try { return import.meta.env.VITE_API_URL; } catch (error) { return null; }
@@ -58,9 +58,10 @@ export function ProductDetailView({ addToCart }: ProductDetailViewProps) {
 
   // SOLUCIÓN: Verificamos de forma estricta que exista product.gallery antes de asignarlo, 
   // e indicamos que obligatoriamente será un string[]. Esto elimina el "possibly undefined".
+  // CORRECCIÓN: Se limpia el enlace de marcador de posición para que sea una URL de imagen válida.
   const gallery: string[] = (product.gallery && product.gallery.length > 0) 
     ? product.gallery 
-    : [product.imageUrl || '[https://via.placeholder.com/600x800?text=Sin+Imagen](https://via.placeholder.com/600x800?text=Sin+Imagen)'];
+    : [product.imageUrl || 'https://via.placeholder.com/600x800?text=Sin+Imagen'];
   
   // Extraer las tallas que tienen stock mayor a 0
   const availableSizes = product.variations?.filter(v => v.stock > 0).map(v => v.size) || [];
@@ -91,8 +92,9 @@ export function ProductDetailView({ addToCart }: ProductDetailViewProps) {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-16 xl:gap-24">
-        {/* GALERÍA DE IMÁGENES */}
+        {/* COLUMNA DE INFORMACIÓN VISUAL Y DESCRIPCIÓN */}
         <div className="flex-1 lg:w-3/5">
+          {/* Main image div */}
           <div className="relative aspect-[3/4] lg:aspect-auto lg:h-[80vh] bg-slate-100 overflow-hidden mb-6">
             <img src={gallery[activeImage]} alt={product.name} className="w-full h-full object-cover object-center animate-in fade-in duration-500" key={activeImage} />
             {!inStock && (
@@ -101,8 +103,9 @@ export function ProductDetailView({ addToCart }: ProductDetailViewProps) {
                 </div>
             )}
           </div>
+          {/* Gallery thumbnails */}
           {gallery.length > 1 && (
-            <div className="flex gap-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            <div className="flex gap-4 overflow-x-auto mb-12" style={{ scrollbarWidth: 'none' }}>
               {gallery.map((img, idx) => (
                 <button key={idx} onClick={() => setActiveImage(idx)} className={`relative w-24 h-32 shrink-0 overflow-hidden ${activeImage === idx ? 'ring-2 ring-slate-900' : 'opacity-60 hover:opacity-100 transition-opacity'}`}>
                   <img src={img} alt={`Vista ${idx}`} className="w-full h-full object-cover" />
@@ -110,19 +113,25 @@ export function ProductDetailView({ addToCart }: ProductDetailViewProps) {
               ))}
             </div>
           )}
+          
+          {/* --- NUEVO BLOQUE: DESCRIPCIÓN DEL PRODUCTO --- */}
+          {/* ¡AQUÍ SE MUESTRA LA DESCRIPCIÓN MOVIDA DE LA COLUMNA DERECHA! */}
+          <div className="border-t border-slate-100 pt-10">
+            <h4 className="text-base font-black uppercase tracking-widest text-slate-900 mb-6 flex items-center gap-2">
+                <AlignLeft size={18}/>Descripción del producto
+            </h4>
+            <p className="text-base text-slate-600 font-light leading-relaxed whitespace-pre-wrap">
+                {product.description || "Su descripción se mostrará aquí."}
+            </p>
+          </div>
         </div>
 
-        {/* DETALLES DEL PRODUCTO */}
+        {/* COLUMNA DE DETALLES DEL PRODUCTO Y COMPRA */}
         <div className="lg:w-2/5 lg:sticky lg:top-32 h-fit">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">{product.category?.name || 'General'}</p>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-6">{product.name}</h1>
           <p className="text-3xl font-black text-slate-900 mb-10">Bs {product.price}</p>
           
-          {/* ¡AQUÍ SE MUESTRA LA NUEVA DESCRIPCIÓN DEL BACKEND! */}
-          <p className="text-base text-slate-600 font-light leading-relaxed mb-10 whitespace-pre-wrap">
-              {product.description || "Prenda esencial."}
-          </p>
-
           {inStock ? (
             <div className="mb-12 border-t border-b border-slate-100 py-10">
               <div className="flex justify-between items-center mb-6">
