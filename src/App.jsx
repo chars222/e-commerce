@@ -9,6 +9,7 @@ import {HomeView} from './views/HomeView';
 import {ProductsView} from './views/ProductsView'; 
 import {ProductDetailView} from './views/ProductDetailView'; 
 import {CartDrawer} from './components/CartDrawer';
+import {AdminPortal} from './views/AdminPortal';
 
 
 // --- COMPONENTE: ScrollToTop (Maneja el scroll al cambiar de ruta) ---
@@ -75,6 +76,8 @@ function AppContent() {
           <Route path="/checkout" element={<CheckoutView cart={cart} removeFromCart={removeFromCart} cartTotal={cartTotal} />} />
           <Route path="/about" element={<PlaceholderView title="Sobre Nosotros" />} />
           <Route path="/contact" element={<PlaceholderView title="Contáctanos" />} />
+          {/* <-- NUEVA RUTA DE ADMINISTRACIÓN --> */}
+          <Route path="/admin/*" element={<AdminPortal />} />
         </Routes>
       </main>
 

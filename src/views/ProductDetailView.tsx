@@ -1,107 +1,158 @@
-/// <reference types="vite/client" />
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, ShoppingBag } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const getApiUrl = () => {
+  try { return import.meta.env.VITE_API_URL; } catch (error) { return null; }
+};
+const API_URL = getApiUrl() || 'http://localhost:3000';
 
-interface ProductVariation {
-  size: string;
-  stock: number;
-}
-
-interface Product {
-  id: number;
+type Product = {
+  id: string;
   name: string;
   price: number;
-  imageUrl: string;
+  imageUrl?: string;
   gallery?: string[];
-  variations?: ProductVariation[];
-  discountPercent?: number;
+  variations?: { size: string; stock: number }[];
+  category?: { name: string };
+  description?: string;
   error?: string;
-}
+};
 
-interface ProductDetailViewProps {
-  addToCart: (product: Record<string, unknown>, size: string) => void;
-}
+type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+};
+
+type ProductDetailViewProps = {
+  addToCart: (item: CartItem, size: string) => void;
+};
 
 export function ProductDetailView({ addToCart }: ProductDetailViewProps) {
-  const { id } = useParams(); // Saca el ID de la URL (ej: /product/15)
+  const { id } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // SOLUCIÓN: Declarar explícitamente el tipo de estado para permitir strings o null
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [activeImage, setActiveImage] = useState(0);
   const [sizeError, setSizeError] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/catalog/products/${id}`)
+    fetch(`${API_URL}/catalog/products/${id}`)
       .then(res => res.json())
       .then(data => {
         setProduct(data);
         setLoading(false);
       })
       .catch(err => {
-        console.error(err);
+        console.error("Error al cargar producto:", err);
         setLoading(false);
       });
   }, [id]);
 
-  if (loading) return <div className="pt-32 text-center text-slate-500">Cargando prenda...</div>;
-  if (!product || product.error) return <div className="pt-32 text-center font-bold">Producto no encontrado</div>;
+  if (loading) return <div className="pt-32 text-center text-slate-400 font-bold">Cargando prenda...</div>;
+  if (!product || product.error) return <div className="pt-32 text-center text-slate-900 font-black text-2xl">Producto no encontrado</div>;
 
-  // Adaptar los datos de Prisma para el Frontend
-  const gallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.imageUrl];
-  const sizes = product.variations ? product.variations.map(v => v.size) : [];
-  const inStock = product.variations ? product.variations.some(v => v.stock > 0) : false;
+  // SOLUCIÓN: Verificamos de forma estricta que exista product.gallery antes de asignarlo, 
+  // e indicamos que obligatoriamente será un string[]. Esto elimina el "possibly undefined".
+  const gallery: string[] = (product.gallery && product.gallery.length > 0) 
+    ? product.gallery 
+    : [product.imageUrl || '[https://via.placeholder.com/600x800?text=Sin+Imagen](https://via.placeholder.com/600x800?text=Sin+Imagen)'];
   
-  // Precio final calculado (si hay descuento en la DB)
-  const finalPrice = product.discountPercent 
-    ? product.price - (product.price * (product.discountPercent / 100))
-    : product.price;
+  // Extraer las tallas que tienen stock mayor a 0
+  const availableSizes = product.variations?.filter(v => v.stock > 0).map(v => v.size) || [];
+  const inStock = availableSizes.length > 0;
 
   const handleAddToCartClick = () => {
     if (!selectedSize) {
       setSizeError(true);
-      setTimeout(() => setSizeError(false), 3000);
+      setTimeout(() => setSizeError(false), 3000); 
     } else {
       setSizeError(false);
-      // Le pasamos el precio final y la imagen principal al carrito
-      addToCart({ ...product, price: finalPrice, image: product.imageUrl }, selectedSize);
+      // Pasamos los datos al carrito
+      addToCart({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: gallery[0]
+      }, selectedSize);
     }
   };
 
   return (
-    <div className="pt-24 pb-20 max-w-7xl mx-auto px-6">
-      {/* ... (Aquí va tu maquetado HTML de ProductDetail que ya tenías) ... */}
-      
-      <div className="flex flex-col md:flex-row gap-12 lg:gap-20">
-        <div className="flex-1 md:w-3/5">
-           <img src={gallery[0]} alt={product.name} className="w-full h-full object-cover bg-slate-100" />
+    <div className="pt-28 pb-24 w-full px-6 lg:px-12">
+      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-10 cursor-pointer">
+        <Link to="/" className="hover:text-slate-900">Inicio</Link> <ChevronRight size={14}/> 
+        <Link to="/products" className="hover:text-slate-900">Catálogo</Link> <ChevronRight size={14}/> 
+        <span className="text-slate-900 truncate max-w-[200px]">{product.name}</span>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-16 xl:gap-24">
+        {/* GALERÍA DE IMÁGENES */}
+        <div className="flex-1 lg:w-3/5">
+          <div className="relative aspect-[3/4] lg:aspect-auto lg:h-[80vh] bg-slate-100 overflow-hidden mb-6">
+            <img src={gallery[activeImage]} alt={product.name} className="w-full h-full object-cover object-center animate-in fade-in duration-500" key={activeImage} />
+            {!inStock && (
+                <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex items-center justify-center">
+                    <span className="bg-white px-8 py-4 text-sm font-black uppercase tracking-widest text-slate-900 shadow-xl">Agotado</span>
+                </div>
+            )}
+          </div>
+          {gallery.length > 1 && (
+            <div className="flex gap-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+              {gallery.map((img, idx) => (
+                <button key={idx} onClick={() => setActiveImage(idx)} className={`relative w-24 h-32 shrink-0 overflow-hidden ${activeImage === idx ? 'ring-2 ring-slate-900' : 'opacity-60 hover:opacity-100 transition-opacity'}`}>
+                  <img src={img} alt={`Vista ${idx}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="md:w-2/5 pt-10">
-          <h1 className="text-3xl font-black mb-4">{product.name}</h1>
-          <p className="text-2xl font-black mb-8">Bs {finalPrice}</p>
+        {/* DETALLES DEL PRODUCTO */}
+        <div className="lg:w-2/5 lg:sticky lg:top-32 h-fit">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">{product.category?.name || 'General'}</p>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-6">{product.name}</h1>
+          <p className="text-3xl font-black text-slate-900 mb-10">Bs {product.price}</p>
+          
+          {/* ¡AQUÍ SE MUESTRA LA NUEVA DESCRIPCIÓN DEL BACKEND! */}
+          <p className="text-base text-slate-600 font-light leading-relaxed mb-10 whitespace-pre-wrap">
+              {product.description || "Prenda esencial."}
+          </p>
 
           {inStock ? (
-            <div className="mb-10 border-t border-slate-100 py-8">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-900 mb-4 block">Seleccionar Talla</label>
-              {sizeError && <p className="text-xs text-red-500 mb-3">⚠️ Elige una talla</p>}
-              
-              <div className="flex gap-3 mb-8">
-                {sizes.map(size => (
-                  <button key={size} onClick={() => { setSelectedSize(size); setSizeError(false); }} className={`w-14 h-14 border font-bold ${selectedSize === size ? 'bg-slate-900 text-white' : 'bg-white'}`}>
-                    {size}
-                  </button>
-                ))}
+            <div className="mb-12 border-t border-b border-slate-100 py-10">
+              <div className="flex justify-between items-center mb-6">
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-900">Seleccionar Talla</label>
               </div>
               
-              <button onClick={handleAddToCartClick} className="w-full py-5 bg-[#0F172A] text-white font-black uppercase flex justify-center items-center gap-2">
-                  <ShoppingBag size={18} /> Añadir a la Bolsa
+              {sizeError && (
+                <p className="text-xs font-bold text-red-500 mb-4 animate-pulse">⚠️ Por favor, selecciona una talla primero.</p>
+              )}
+
+              <div className="flex flex-wrap gap-4 mb-10">
+                  {availableSizes.map(size => (
+                      <button 
+                        key={size} 
+                        onClick={() => { setSelectedSize(size); setSizeError(false); }} 
+                        className={`w-16 h-16 border text-base font-bold flex items-center justify-center transition-colors ${selectedSize === size ? 'border-slate-900 bg-slate-900 text-white shadow-md' : 'border-slate-200 text-slate-600 hover:border-slate-400 bg-white'}`}
+                      >
+                          {size}
+                      </button>
+                  ))}
+              </div>
+              
+              <button onClick={handleAddToCartClick} className="w-full py-6 bg-[#0F172A] text-white text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-colors active:scale-[0.98] flex justify-center items-center gap-3">
+                  <ShoppingBag size={20} /> Añadir a la Bolsa
               </button>
             </div>
           ) : (
-            <div className="py-5 text-center text-xs font-black uppercase bg-slate-50 text-slate-500">Agotado</div>
+            <div className="mb-12 border-t border-b border-slate-100 py-10">
+              <div className="bg-slate-50 border border-slate-200 text-slate-500 py-6 text-center text-sm font-black uppercase tracking-widest">Actualmente Agotado</div>
+            </div>
           )}
         </div>
       </div>
