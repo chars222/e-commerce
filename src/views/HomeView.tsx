@@ -66,7 +66,7 @@ export const HomeView = () => {
   return (
     <>
       <section className="relative h-[90vh] w-full bg-slate-900 overflow-hidden flex items-center justify-center">
-        <img src="https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&q=80&w=2000" alt="Hero Fashion" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+        <img src="https://web.centralmoda.store/uploads/img-1775871259643-383914535.webp?auto=format&fit=crop&q=80&w=2000" alt="Hero Fashion" className="absolute inset-0 w-full h-full object-cover opacity-60" />
         <div className="relative z-10 text-center text-white px-6">
             <p className="text-xs md:text-sm font-bold tracking-[0.3em] uppercase mb-6 opacity-80">Nueva Temporada</p>
             <h2 className="text-6xl md:text-8xl font-black tracking-tight mb-10">Lujo Silencioso.</h2>
