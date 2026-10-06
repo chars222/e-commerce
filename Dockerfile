@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Recibimos la URL del backend como argumento desde el docker-compose
-ARG VITE_API_URL=https://api.centralmoda.store
+ARG VITE_API_URL=https://api.centralmoda.online
 ENV VITE_API_URL=${VITE_API_URL}
 
 # Construimos la versión optimizada (dist)
