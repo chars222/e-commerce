@@ -7,11 +7,12 @@ const getApiUrl = () => {
   try { return import.meta.env.VITE_API_URL; } catch (error) { return null; }
 };
 
-const API_URL = getApiUrl() || 'http://localhost:3000';
 const getBusinessId = () => {
   try { return import.meta.env.VITE_BUSINESS_ID; } catch (error) { return '1'; }
 };
-const BUSINESS_ID = getBusinessId();
+
+const API_URL = getApiUrl() || 'http://localhost:3000';
+const BUSINESS_ID = getBusinessId()|| '1';
 
 export const HomeView = () => {
   const navigate = useNavigate();
